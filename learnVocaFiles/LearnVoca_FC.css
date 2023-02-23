@@ -1,0 +1,46 @@
+/*주의!: style element안에 주석 달때 '//'는 허용안됨.*/
+
+table, th, td {
+    border: 1px solid;    
+    overflow: hidden;
+    padding: 0 5px 0 5px;    
+}
+table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    /*white-space: nowrap;*/ /* GTC: it blocked word wrap in each Meaning cell. So, commented out.*/
+}
+th {
+    text-align: center;
+    background-color: rgb(77, 46, 46);
+    color:white;
+    white-space: nowrap;
+    /*padding: 0 5px 0 5px;*/
+}
+/*td { */
+    /*padding: 0 5px 0 5px;*/
+    /*overflow-wrap:break-word;*/
+    /*word-wrap: break-word;*/
+    /*word-break:break-all;*/ /* GTC: you need to set width to utilize this property. */
+/*}*/
+#thSel, #thPron { font-size: 8pt; }
+.trWMean { max-width: 400px;}
+/*.trPron {visibility: hidden;}*/
+/*.trPron {display: none;}*/  /* display: inline; display: block; display: none; */
+.trToAdd { display: none;}
+.trSpace_1 { display: none;}
+
+/* ==> GTC: to remove arrows in the number input box, following 2 properties must be defined. */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+/*<==  */
+

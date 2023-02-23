@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- <meta charset="utf-8" /> -->
+    <title>SuntaekVil English Vocabulary</title>    
+    <link rel="stylesheet" type="text/css" href=".\learnVocaFiles\IndexLearnVoca_FC.css" />    
+    <script src=".\learnVocaFiles\voca.js" type="text/javascript"></script>
+    <script src=".\learnVocaFiles\IndexLearnVoca_FC.js" type="text/javascript"></script>
+    <script>
+        const AppVer = "1.0";
+        const AppLastUpdate = "Feb. 23, 2023";
+
+        const ixNvReviewWord = -1;  //'단어 암기'
+        const ixNvAddNewWord = -2;  //'단어 추가'
+
+        let bInit = false;
+        let bInitLearnVoca = false;
+        let bInitScanWord = false;
+        let bInitSetting  = false;
+        let postMsgTDly = dftPostMsgTimeout + dftExtPostMsgTimeout;
+
+        let aIds = [ menuReviewWords, menuAddNewWords, menuSettings, menuIntro];        
+        let lastMenu = "";
+
+        // following new 'showElement' function doesn't use jQuery.
+        function showElement(item) {//}, e) {
+            // if (!e) {
+            //     e = window.event; // for IE
+            //     e.returnValue = false;
+            // } else {
+            //     e.preventDefault();
+            // }
+
+            if( showNavElement(item, aIds) === true ) {
+
+                var htm = null;
+                var v;
+                let src = ".\\learnVocaFiles\\LearnVoca_FCurve.htm?menu=";
+                let ix = (item * -1) - 1;
+
+                // 'src' for both 'ifScanWd' iframe and 'ifReviewWd' must be dynamically assigned.
+                // otherwise both 'window.onload()' and 'window.beforeunload()' are call twice in the page refresh
+                // since LearnVoca_FCurve.htm were embedded in two iframes.
+                // Once the 'src' is dynamically assigned, only the 'window.beforeunload()' is called once just
+                // before the refreshed page is redrawn and then 'window.onload()' is called to complete the refresh.
+                // When you switch one nav page and the other nav, especially between 2 LearnVoca_FCurve.htm pages,
+                // the function 'window.beforeunload()' is called before switching to new nav page
+                // and the other function 'window.onload()' when new nav page is viewed as well.
+                // This are exactly what I wanted.
+
+                switch( aIds[ix] ) {
+                case menuReviewWords:
+                    htm = document.getElementById("ifReviewWd");
+                    if( bInitLearnVoca === false ) {
+                        src += aIds[ix] + "&Ix=1"
+                        if( bAdmin === true ) src += "&Admin=1";
+                        htm.src = src;
+                        bInitLearnVoca = true;
+                    } else {
+                        //htm.contentWindow.postMessage("message", ".\\learnVocaFiles\\LearnVoca_FCurve.htm");
+                        htm.contentWindow.postMessage({msg: "review"}, "*");
+                        if( bAdmin === true ) htm.contentWindow.postMessage({msg: "enAdmin"}, "*");
+                        else htm.contentWindow.postMessage( {msg: "disAdmin"}, "*");
+                    }
+                    break;
+                case menuAddNewWords:
+                    htm = document.getElementById("ifScanWd");
+                    if( bInitScanWord === false ) {                        
+                        src += aIds[ix] + "&Ix=2"
+                        if( bAdmin === true ) src += "&Admin=2";
+                        htm.src = src;
+                        bInitScanWord = true;
+                    } else {
+                        //htm.contentWindow.postMessage("message", ".\\learnVocaFiles\\LearnVoca_FCurve.htm");
+                        htm.contentWindow.postMessage({msg: "scan"}, "*");
+                        if( bAdmin === true ) htm.contentWindow.postMessage( {msg: "enAdmin"}, "*");
+                        else htm.contentWindow.postMessage( {msg: "disAdmin"}, "*");
+                    }
+                    break;
+                case menuSettings:
+                    document.getElementById("settingMsg").innerHTML = "";
+                    htm = document.getElementById("ifSettings");
+                    if( bInitSetting === false ) {
+                        src += aIds[ix] + "&Ix="
+                        htm.src = src + "0";
+                        //document.getElementById("ifSet2").src = src + "20";
+                        bInitSetting = true;
+                    }
+
+                    setTimeout(cmdGetVocaTableIndex, postMsgTDly);
+
+                    break;
+                case menuIntro:
+                    document.getElementById("itrVer").innerHTML = AppVer;
+                    document.getElementById("itrLstUdt").innerHTML = AppLastUpdate;
+                    break;
+                }
+
+                
+
+                if( htm !== null ) {
+                    try {
+                        v = localStorage.getItem("winH");
+                        if( v !== null ) {
+                            if( isNaN(v) === false ) {
+                                htm.style.height = v + "px";
+                            }
+                        }
+
+                    } catch (err) {
+                        alert("Error in reading the window height in local storage !\r\n\tError: " + err.message);
+                    }
+
+                    try {
+                        v = localStorage.getItem("winW");
+
+                        if( v !== null ) {
+                            if( isNaN(v) === false ) {
+                                htm.style.width = v + "px";
+                            }
+                        }
+
+                    } catch (err) {
+                        alert("Error in reading the window width in local storage !\r\n\tError: " + err.message);
+                    }
+                }
+
+
+                if( lastMenu !== aIds[ix] ) {
+                    switch( lastMenu ) {
+                    case menuReviewWords:
+                        document.getElementById("ifReviewWd").contentWindow.postMessage( {msg: "save"}, "*");
+                        break;
+                    case menuAddNewWords:
+                        document.getElementById("ifScanWd").contentWindow.postMessage( {msg: "save"}, "*");
+                        break;
+                    }
+                }
+
+                lastMenu = aIds[ix];
+
+                return true;
+            }
+
+            return false;
+        }
+
+        function AdminMode() {
+            if( bAdmin === false ) {
+                bAdmin = true;
+                document.getElementById('adminMd').innerText = 'Disable Admin Mode';
+            } else {                
+                bAdmin = false;
+                document.getElementById('adminMd').innerText = 'Enable Admin Mode';
+            }
+        }
+        
+
+
+        function reloadWordTablePage(ix) {
+            let src = "";
+            if( ix === 1) {
+                src = "ifReviewWd";
+            } else if( ix === 2) {
+                src = "ifScanWd";
+            }
+
+            if( src.length > 0 ) document.getElementById(src).contentWindow.postMessage( {msg: "reload"}, "*");
+        }
+
+
+        function idxEventHandler(e) {
+            if( Array.isArray(e.data) === true ) {
+                switch (e.data[0]) {
+                case "vocaTable":
+                    let v = Number(e.data[1]);
+                    if( v >= 0 ) {
+
+                        document.getElementById("vocaTblSel").selectedIndex = v;
+
+                    }
+                    break;
+                case "wdCnt":
+                    try {
+                        if( e.data[1] > 0 ) {
+                            let n = localStorage.getItem("wdRdy");
+                            if( (isNaN(n) === true) || (n === null) ) {
+                                localStorage.setItem("wdRdy", e.data[1].toString());
+                            } else if( Number(n) === 0 ) {
+                                localStorage.setItem("wdRdy", e.data[1].toString());
+                            }
+                        }
+                        
+                    } catch (err) {
+                        alert("Error in accessing 'wdRdy' in localStorage !\r\n\tError: " + err.message);
+                    }                
+                    break;
+                case "expectedRvDay":
+                    document.getElementById("eptRvDay").innerHTML = e.data[1];
+                    break;
+                }
+            }
+        }
+
+
+
+        window.onload = function(e) {
+            var b = "";
+            if (!e) {
+                e = window.event; // for IE
+                e.returnValue = false;
+            } else {
+                e.preventDefault();
+            }
+
+            if( bInit === false ) {
+
+                window.addEventListener("message", idxEventHandler);
+
+                document.getElementById("hdVer").innerHTML = AppVer;
+                document.getElementById("hdLstUdt").innerHTML = AppLastUpdate;
+                document.getElementById("ftVer").innerHTML = AppVer;
+                document.getElementById("ftLstUdt").innerHTML = AppLastUpdate;
+                postMsgTDly = dftPostMsgTimeout + dftExtPostMsgTimeout;
+
+                try {
+                        let v = localStorage.getItem("pmExtTD");
+
+                        if( (isNaN(v) === true) || (v === null) ) {
+                            localStorage.setItem("pmExtTD", dftExtPostMsgTimeout.toString());
+
+                            //postMsgTDly = dftPostMsgTimeout + dftExtPostMsgTimeout;
+                            document.getElementById("tDlySel").value = dftExtPostMsgTimeout.toString();
+                        } else {
+                            let v2 = Number(v);
+
+                            if( isNaN(v) === false ) {
+                                document.getElementById("tDlySel").value = v;
+                            }
+                            postMsgTDly = v2 + dftPostMsgTimeout;
+                        }
+                } catch (err) {
+                    alert("Error in accessing the postMessage extra time delay !\r\n\tError: " + err.message);
+                }
+
+                
+                try {
+                    let m = ixNvReviewWord;  // '단어 암기' page
+                    b = localStorage.getItem("wdRdy");
+
+                    if( (isNaN(b) === true) || (b === null) ) {
+                        m = ixNvAddNewWord; // '단어 추가' page since it is most likely the first visit to this website.
+                        
+                    } else if ( Number(b) === 0 ) {
+                        m = ixNvAddNewWord; // '단어 추가' page since it is most likely the first visit to this website.
+                    }
+
+                    if( m === ixNvAddNewWord ) {
+                        document.getElementById(menuReviewWords).hidden = true;
+                        document.getElementById('btnReload2').hidden = false;
+                    }
+
+                    showElement(m);
+                } catch (err) {
+                    alert("Error in accessing 'bReady' in localStorage !\r\n\tError: " + err.message);
+                }
+                
+                try {
+                    b = localStorage.getItem("navExp");
+                    if( b == "true") { // local store exists.
+                        //localStorage.removeItem("navExp");
+                        bNavExpand = true;
+
+                    } else if ( b == "false") { // local store exists.
+                        bNavExpand = false;
+
+                    } else { // no local store exists.
+                        bNavExpand = true;
+                        localStorage.setItem("navExp", bNavExpand.toString());
+                    }
+
+                    if( bNavExpand === false ) {
+                        //navExpandOrCollapse( bNavExpand );
+                    }
+                    
+                    bInit = true;
+                } catch (err) {
+                    alert("Error in reading the navigation column expend status !\r\n\tError: " + err.message);
+                }
+            }
+        }
+
+
+
+        window.onbeforeunload = function() { //e) {
+
+            // if (!e) {
+            //     e = window.event; // for IE
+            //     e.returnValue = false;
+            // } else {
+            //     e.preventDefault();
+            // }
+
+            try {
+                document.getElementById("ifReviewWd").src = "";
+                document.getElementById("ifScanWd").src = "";
+                document.getElementById("ifSettings").src = "";
+
+                if( bNavExpand.toString() !== localStorage.getItem("navExp") ) { // there was a change.
+                    localStorage.setItem("navExp", bNavExpand.toString());
+                }
+            } catch (err) {
+                alert("Failure in saving the navigation column expend status !\r\n\tMsg:" + err.message );
+            }
+        }
+        //document.getElementById("ifScanWd").src = ".\\learnVocaFiles\\LearnVoca_FCurve.htm?menu=scanWord";
+    </script>
+</head>
+<body>
+<noscript> 만약 이 메시지를 보신다면 javascript가 off된 상태이니 on시켜 줘야만 본 페이지의 내용을 설계된 대로 보실 수 있습니다.</noscript> <!-- 이 tag는 Javascript가 동작하지 않을 때 내용을 표시해 준다. -->
+<header>영어 단어 암기 &emsp;<small>Quick &amp; Easy &#64; SuntaekVil</small></header>
+<nav><br/>
+    <a href="#" onClick="navExpandOrCollapse(false)" id="navColpse">&lt;&lt; <i style="font-size: 10pt;">축소 (hide)</i></a>
+    <a href="#" onClick="navExpandOrCollapse(true)" id="navExpand" hidden>&gt;&gt; <i style="font-size: 8pt;">확장</i></a><br/><br/>
+
+    <div id="n0"><a><b style='background-color:LightGreen'>Learn Voca.</b></a></div><br/>
+    
+    <div id="n1">1. <a href="#" id="m1" class="prj" onClick="showElement(-1)">단어 암기</a></div>
+    <div id="n2">2. <a href="#" id="m2" class="prj" onClick="showElement(-2)">단어 추가</a></div><br/>
+
+    <div id="n3">3. <a href="#" id="m3" class="prj" onClick="showElement(-3)"><i style="font-size: 9pt;">Settings</i></a></div>
+    <div id="n4">4. <a href="#" id="m4" class="prj" onClick="showElement(-4)"><i style="font-size: 9pt;">About</i></a></div>
+    
+</nav>
+<section> 
+    <div id="dtGoal" hidden><br/>
+        <h1><b style="color: brown">SuntaekVil</b> 영어 단어 암기 <span style="color: brown">앱</span> !</h1>
+        <h5> &emsp; <span style="font-size: small;">쉽고, 빠르게 단어 외우기</span> &#64; SuntaekVil &ensp;<span style="color: gray">(<i>a.k.a. SuntechVil</i>)</span></h5>
+        <b style="font-size: small;"> &emsp;Application Version: <span id="hdVer">&nbsp;</span>,&emsp; Last Update: <span id="hdLstUdt">&nbsp;</span></b>
+        <br/><br/>
+        <hr>
+    </div>
+    <div id="learnVoca">
+        <!--b><mark>단어 암기장</mark></b><br/-->
+        <details><summary style="font-size: 11px; padding-bottom: 2px;"><u><mark>Table Page</mark> 크기 조절 (임시)</u>&emsp; 
+            [<i style="font-size: 8pt; color: grey;">암기 예정일: <span id="eptRvDay">yyyy m dd</span></i>]&nbsp; <button onclick="reloadWordTablePage(1)">Reload the Table</button> </summary>
+            Adjust Height: <button onclick="shrinkHeight(1, 1)">&nbsp;-</button>&emsp;<button onclick="expandHeight(1, 1)">+&nbsp;</button>&emsp;&emsp;<button onclick="shrinkHeight(1, 2)">--</button>&emsp;<button onclick="expandHeight(1, 2)">++</button>&emsp;&emsp;
+            Adjust Width: <button onclick="shrinkWidth(1, 1)">&nbsp;-</button>&emsp;<button onclick="expandWidth(1, 1)">+&nbsp;</button>&emsp;&emsp;<button onclick="shrinkWidth(1, 2)">--</button>&emsp;<button onclick="expandWidth(1, 2)">++</button></details>
+        <!-- Need to dynamically assign the 'src' because both 'window.onload()' and 'window.beforeunload()' are called twice in the LearnVoca_FCurve.htm;
+             one by this iframe and the other by the iframe in the 'ifScanWd' above which calls the same htm file.-->
+        <!--iframe id="ifReviewWd" src="" style="max-width: 1330px; min-width: 680px; max-height:880px; min-height: 440px; background-color: white; zoom:0.8"></iframe><br/-->        
+        <iframe id="ifReviewWd" src="" style="width:600px; height:410px; border:none;"></iframe>
+    </div>
+    
+    <div id="scanWord" hidden>
+        <!--b><mark>새로 암기할 단어를 추가해 주세요</mark></b><br/-->
+        <details><summary style="font-size: 11px; padding-bottom: 2px;"><u><mark>Table Page</mark> 크기 조절 (임시)</u>&nbsp;<button id='btnReload2' onclick="reloadWordTablePage(2)" hidden>Reload the Table</button></summary>
+            <div>
+                Adjust Height: <button onclick="shrinkHeight(2, 1)">&nbsp;-</button>&emsp;<button onclick="expandHeight(2, 1)">+&nbsp;</button>&emsp;&emsp;<button onclick="shrinkHeight(2, 2)">--</button>&emsp;<button onclick="expandHeight(2, 2)">++</button>&emsp;&emsp;Adjust Width: <button onclick="shrinkWidth(2, 1)">&nbsp;-</button>&emsp;<button onclick="expandWidth(2, 1)">+&nbsp;</button>&emsp;&emsp;<button onclick="shrinkWidth(2, 2)">--</button>&emsp;<button onclick="expandWidth(2, 2)">++</button><br/>
+                <!--button onclick="shrinkHeight(2)">Height --</button>&emsp;<button onclick="expandHeight(2)">Height ++</button>&emsp;&emsp;&emsp;&emsp;<button onclick="shrinkWidth(2)">Width --</button>&emsp;<button onclick="expandWidth(2)">Width ++</button><br/-->
+            </div>
+        </details>
+        <!-- Need to dynamically assign the 'src' because both 'window.onload()' and 'window.beforeunload()' are called twice in the LearnVoca_FCurve.htm;
+             one by this iframe and the other by the iframe in the 'ifReviewWd' below which calls the same htm file.-->
+        <!--iframe id="ifScanWd" src="" style="min-width: 680px; max-width: 1330px; max-height:880px; min-height: 440px; background-color: white; zoom:0.8"></iframe><br/-->
+        <iframe id="ifScanWd" src="" style="width:600px; height:410px; border:none;"></iframe><br/>
+        
+        <!--button onclick="expandHeight(2)">Expand Height</button>&emsp;&emsp;&emsp;&emsp;&emsp;<button onclick="expandWidth(2)">Expand Width</button>&emsp;&emsp;<br/-->
+    </div>
+
+    <div id="setting" hidden>
+        <h2><mark>Settings</mark>&emsp;&emsp;<div id="settingMsg" style="font-size: small; color: brown; display: inline;">&nbsp;</div></h2><hr>
+
+        <details><summary class="uline">1. <mark>General Settings</mark></summary>
+            <div>
+                <ul>
+                    <li>단어 암기 Web 앱의 설정 초기화 (Reset Settings to Default):<br/>&emsp;&emsp;
+                        <button onclick="resetToDefaultSettings()">설정 초기화</button>
+                    </li><br/>
+
+                    <li>인터넷 속도가 느려 단어가 보이지 않을 때, 서버 접속 Timeout 시간 늘리기:<br/>&emsp;&emsp;
+                        <select id="tDlySel" class="selStatusOption" onchange="cmdSetExtraDelay4PostMsg()">
+                            <option value="0">0 초</option>
+                            <option value="100">0.1 초</option>
+                            <option value="200">0.2 초</option>
+                            <option value="300" selected>0.3 초</option>
+                            <option value="400">0.4 초</option>
+                            <option value="500">0.5 초</option>
+                            <option value="600">0.6 초</option>
+                            <option value="1000">1 초</option>
+                            <option value="2000">2 초</option>
+                        </select>
+                    </li><br/>
+
+                    <li><details><summary class="uline" style="list-style-type: none;">단어 Table 창 크기 조절</summary><div>&emsp;
+                        Adjust Height: <button onclick="shrinkHeight(10, 1)">&nbsp;-</button>&emsp;<button onclick="expandHeight(10, 1)">+&nbsp;</button>&emsp;&emsp;<button onclick="shrinkHeight(10, 2)">--</button>&emsp;<button onclick="expandHeight(10, 2)">++</button>&emsp;&emsp;Adjust Width: <button onclick="shrinkWidth(10, 1)">&nbsp;-</button>&emsp;<button onclick="expandWidth(10, 1)">+&nbsp;</button>&emsp;&emsp;<button onclick="shrinkWidth(10, 2)">--</button>&emsp;<button onclick="expandWidth(10, 2)">++</button><br/><br/>
+                        <iframe id="ifSettings" src="" style="width:600px; height:400px; zoom:0.8"></iframe><br/>
+                        </div></details>
+                    </li>
+                </ul>
+            </div>
+        </details><br/>
+
+        <details><summary class="uline">2. <mark>Select Vocabulary Table</mark></summary>
+            <div style="padding-left: 20px;"><br/>
+                <!--select id="vocaSelSet" name="subject" class="selStatusOption" onchange="vocaChanged(true)" hidden>
+                    <option value="voca220_table">Voca 220</option>
+                    <option value="voca330_table" selected>Voca 330</option>
+                </select-->
+                <!--iframe id="ifSet2" src="" style="width:400px; height:40px; border:none;"></iframe><br/>&emsp;-->
+
+                <span id="vocaSelLbl" class="indexLabel">단어장 선택</span>
+                <span>
+                    <select id="vocaTblSel" name="subject" class="selStatusOption" onchange="vocaTblChanged()">
+                        <option value="esyL1" selected>초급 1</option>
+                        <option value="itmL1">중급 1</option>
+                        <option value="itmL2">중급 2</option>
+                        <option value="advL1">고급 1</option>
+                    </select>
+                </span><br/><br/>&emsp;
+                <div style="padding-left: 1em;">
+                    단어장을 변경 해도<br/>
+                    그 동안 학습한 <b>단어에 정보</b>가<br/>
+                    <b>사용한 기기에 그대로 존재</b> 합니다.<br/>
+                    만약 변경한 단어장으로<br/>
+                    단어 암기를 시작할 예정이면,
+                    <b style="color:purple">아래 버튼을 클릭</b>해<br/>
+                    기존 <b style="color:purple">단어 정보를 삭제</b>해 주세요.<br/><br/>
+
+                    <span class="clsPrplYellow">* 주의</span>:<i><br/>&emsp;&emsp;
+                        한번 <b style="color:red">삭제된 단어 정보</b>는<br/>&emsp;&emsp;
+                        다시 <b style="color:red">복원 할 수 없습니다.</b><br/>&emsp;&emsp;
+                        아래 버튼 <b style="color:red">클릭시 주의</b>해 주세요.</i><br/><br/>&emsp;&emsp;&emsp;
+                    
+                    <button onclick="clearReviewWordList('setting')">학습한 단어 정보 삭제</button><br/><br/>&emsp;&emsp;
+            </div>
+        </details><br/>
+
+        <details><summary class="uline">3. <mark>단어장(표) 및 학습 단어 목록</mark></summary><br/>
+            <div style="padding-left: 10px;">
+                <ol type="a">
+                    <li>학습한 <span style="color:red">모든 단어 정보를 삭제</span> 하려면<br/>&emsp;
+                        아래 버튼을 클릭 하세요.<br/>&emsp;
+                        (Click the button below to delete the list of words<br/>&emsp;&nbsp;
+                         which you have selected to review)<br/><br/>&emsp;&emsp;
+
+                        <button id="clrRv" onclick="clearReviewWordList('setting')">학습 단어 정보 삭제 및 앱 초기화</button></li>
+                </ol>
+            </div>
+        </details><br/>
+        
+        <details><summary class="uline">4. <mark>Admin</mark></summary><br/>
+            <div style="padding-left: 20px;">                
+                <button id="adminMd" onclick="AdminMode()">Enable Admin Mode</button>
+            </div>
+        </details><br/><hr><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+        <!--iframe id="ifSettings" src="" style="max-width: 1330px; min-width: 680px; max-height:880px; min-height: 440px; background-color: white; zoom:0.8" hidden></iframe><br/-->    
+    </div>
+
+    <div id="intro" hidden>&ensp;
+        <h1><b style="color: brown">SuntaekVil</b> 영어 단어 암기 <span style="color: brown">앱</span> !</h1>
+        <h5> &emsp; <span style="font-size: small;">쉽고, 빠르게 단어 외우기</span> &#64; SuntaekVil &ensp;<span style="color: gray">(<i>a.k.a. SuntechVil</i>)</span></h5>
+        <b style="font-size: small;"> &emsp;Application Version: <span id="itrVer">&nbsp;</span>,&emsp; Last Update: <span id="itrLstUdt">&nbsp;</span></b>
+        <br/><br/><hr><br/>
+        <details style="padding-left: 1em;"><summary style="font-size:12pt;"><u>빠르고, 쉽게 단어를 암기 하게 하는 앱 (Web App)</u></summary><div style="line-height:150%; padding-left: 1em; font-size: 13.28px;"><br/>
+            <mark>단어 암기</mark>는 <b>한번에 장 시간</b> 하는것 보다<br/>
+            <b style="color: purple">짧게 여러번 반복</b> 하는게 더 <b style="color: purple">효과적</b> 입니다.<br/>
+            이를 잘 증명하는 예가 '에빙하우스'의<br/>
+
+            <details style="display: inline;"><summary><u>망각곡선 (forgetting curve)</u></summary><div id="fcurv" style="padding-left: 1em; padding-right: 1em; font-size: small;  background-color: lightgray;"><br/>
+
+                <details><summary style="font-size:14px"><u>기억의 종류</u></summary><div id="lvMemT" style="padding-left: 16pt;">
+                    기억이 유지되는 기간에 따라<br/>
+                    <u>감각기억, 단기기억</u>, <u>장기기억</u> 으로 구분 된다.
+                        <div style="padding-left: 1em;">
+                            <details class="idnt_L1"><summary>1) <u>감각기억 (sensory memory)</u>:</summary><div id="lvSensM">&emsp;&nbsp;
+                                어떤 정보가 지각된 최초의 순간에 기어되는 것으로써<br/>&emsp;
+                            <span style="color:red">수 밀리에서 수초 까지만 기억</span>을 유지한다.
+                            </div></details>        
+                            <details class="idnt_L1"><summary>2) <u>단기 기억 (short-term memory)</u>:</summary><div id="lvShtM">&emsp;&nbsp;
+                                <span style="color:red">최대 몇분 까지만 기억</span>되는 짧은 기억.
+                            </div></details>        
+                            <details class="idnt_L1"><summary>3) <u>장기 기억 (long-term memory)</u>:</summary><div id="lvLnM">&emsp;&nbsp;
+                            <span style="color:red">비교적 영속적으로 저장</span>되는 기억.<br/>&emsp;
+                                단백질 합성에 의존하는 신경구조의<br/>&emsp;
+                                안정적, 영구적인 변화에 의해 장기간 기억된다.<br/>&emsp;
+                                특히, <mark>단기 기억들을 반복</mark>해서 떠올리면<br/>&emsp;
+                                <mark>장기기억으로 전환</mark>된다.
+                            </div></details>
+                        </div>
+                </div></details><br/>
+    
+                <!--img src=".\Prj_LearnVoca\Ebbinghaus_ForgettingCurve.png" /-->
+                <iframe src=".\learnVocaFiles\Ebbinghaus_ForgettingCurve.png" height="350" width="440" style="background-color: white; zoom:1.5"></iframe>
+                <hr><br/>
+    
+                <details><summary style="font-size:14px"><u>망각 곡선 이란 ?</u></summary><div id="lvFotC" style="padding-left: 1em;">&nbsp;&nbsp;
+                    1885년 헤르만 에빙하우스는<br/>&nbsp;
+                    <span style="color:red">자연적인 망각에 대한 연구 결과</span>를<br/>&nbsp;
+                    통해 망각 곡선을 선보였다.<br/>&nbsp;
+                    자신이 직접 의미 없는 단어들을 암기하여<br/>&nbsp;
+                    테스트한 결과를 그래프로 나타낸 것이<br/>&nbsp;
+                    바로 망각곡선 (forgetting curve) 이다.<br/><br/><br/>&nbsp;
+                    
+                    위 그림은 망각곡선의 한 예인데,<br/>&nbsp;
+                    <span style="color:magenta">단기기억</span>에 저장된 기억이</span><br/>&nbsp;
+                    어떻게 <span style="color:magenta">시간에 따라 망각</span>되는지<br/>&nbsp;
+                    다양한 상황으로 보여주고 있다.<br/><br/>&nbsp;
+    
+                    <div style="padding-left: 1em">
+                        <details class="idnt_L1"><summary><u>수업 <b>직후</b> 기억</u>:</summary><div id="lvRevN" style="padding-left: 1em">&emsp;
+                            위 표와 같이 수업이 끝난 직후<br/>
+                            일반 적으로 <span style="color:red">수업 내용의 약 <b>75%</b> 기억</span><br/>
+                            한다고 한다. 이렇게 단기 기억에 <br/>
+                            저장된 것들은 위 파란색 도표와 같이, <br/>
+                            <b>1 개월</b>이 지나면 <b>5%</b> 정도만 기억에 남고<br/>
+                            모두 사라져 버린다.
+                        </div></details><br/>
+    
+                        <details class="idnt_L1"><summary><u>수업 <b>10 분</b> 후 복습</u>:</summary><div id="lvRev10" style="padding-left: 1em">&emsp;
+                            그러나, 수업 10분 후 복습을 하면,<br/>
+                            <span style="color:red"><b>1 개월</b> 후 약 <b>15% 기억</b></span>해 무려<br/>
+                            <span style="color:red">3 배의 기억력 향상</span>을 나타낸다.<br/>
+                            바로 복습해 줌으로써,<br/>
+                            놀라운 향상을 보인다.<br/>
+                            물론, 복습 직후,<br/>
+                            수업 중에 이해하지 못한 것까지<br/>
+                            추가로 이해해 100% 가까운 기억력을 보여준다.
+                        </div></details><br/>
+    
+                        <details class="idnt_L1"><summary><u>수업 <b>1 일</b> 후 복습</u>:</summary><div id="lvRev1D" style="padding-left: 1em">&emsp;
+                            만약 24 시간 후 복습을 한번 더 해 주면,<br/>
+                            <span style="color:red">1개월 후 약 <b>30%</b>를 기억</span> 하게 된다.<br/>
+                            두 번의 복습으로 <span style="color:red">기억력이 6 배 상승</span> 한다.
+                        </div></details><br/>
+                        
+                        <details class="idnt_L1"><summary><u>수업 <b>1 주일</b> 후 재복습</u>:</summary><div id="lvRev1W" style="padding-left: 1em">&emsp;
+                            1 주일 후 다시 복습 해주면,<br/>
+                            이번엔 약 <span style="color:red"><b>60%</b> 까지 기억</span>해 낸다.<br/>
+                            수업 직후 75%를 기억 하던 것과<br/>
+                            비교하면 놀라운 결과 이다.
+                        </div></details><br/>
+    
+                        <details class="idnt_L1"><summary><u>수업 <b>1 개월</b> 후 재복습</u>:</summary><div id="lvRev1M" style="padding-left: 1em">&emsp;
+                            마지막으로, 1개월 후 한번 더 반복 해주면,<br/>
+                            이젠 완전히 <span style="color:red"><b>장기 기억</b>에 들어 간다</span>.<br/>
+                            즉, 1 개월이 지나도 수업 직후에 기억한 것<br/>
+                            이상을 기억하게 되는 것이다.
+                        </div></details>
+                    </div><br/><hr>
+                </details><br/>
+            </details> 입니다.<br/><br/>
+
+            이 앱(Web App)은 이런 반복 학습을<br/>
+            자동화 시켜, 많은 영어 단어를 <br/>
+            <span class="clsPrplYellow">빠르게 암기</span>하고,<br/>
+            <span class="clsPrplYellow">오래 기억</span> 할 수 있게 도와 줍니다.
+            
+        </div></details><br/>&emsp;
+
+        <details style="padding-left: 1em;"><summary style="font-size:12pt;"><u>단어 암기 Web App 사용 방법</u></summary><div id="lvDemo" style="line-height:150%; padding-left: 1em; font-size: 13.28px;">&nbsp;
+            <details class="idnt_L1"><summary>1)&nbsp; <u>단어 암기 반복 주기</u>:</summary><div id="lvDemo1"><br/>&emsp;&nbsp;
+                단어 암기 <span class=clsRed>반복 주기</span>는 다음과 같습니다.<br/>
+
+                <details class="idnt_L2"><summary class="sqrStyle">
+                    0일 --&gt; <span class=clsRedYellow>1일</span> --&gt; <span class=clsRedYellow>1일</span> --&gt; <span class=clsRedYellow>
+                    1일</span> --&gt; <span class=clsRedYellow>3일</span> --&gt; <span class=clsRedYellow>7일</span> --&gt; <span class=clsRedYellow>
+                    14일</span> --&gt; <span class=clsRedYellow>28일</span> --&gt; <span class=clsRedYellow>1년</span> &emsp; <span class="clsbLGrn">(단어 A)</span>
+                    </summary><div>
+                        <details class="idnt_L3"><summary class="sqrStyle">&nbsp;
+                            0일 --&gt; <span class=clsRedYellow>1일</span> --&gt; <span class=clsRedYellow>1일</span> --&gt; <span class=clsRedYellow>
+                            1일</span> --&gt; <span class=clsRedYellow>3일</span> --&gt; <span class=clsRedYellow>7일</span> --&gt; <span class=clsRedYellow>
+                            14일</span> --&gt; <span class=clsRedYellow>28일</span> --&gt; <span class=clsRedYellow>1년</span &emsp; <span class="clsbLGry">(단어 B)</span>
+                            </summary><div>
+                                <details class="idnt_L4"><summary class="sqrStyle">
+                                    0일 --&gt; <span class=clsRedYellow>1일</span> --&gt; <span class=clsRedYellow>1일</span> --&gt; <span class=clsRedYellow>
+                                    1일</span> --&gt; <span class=clsRedYellow>3일</span> --&gt; <span class=clsRedYellow>7일</span> --&gt; <span class=clsRedYellow>
+                                    14일</span> --&gt; <span class=clsRedYellow>28일</span> --&gt; <span class=clsRedYellow>1년</span &emsp; <span class="clsbLSkBlu">(단어 C)</span>
+                                    </summary><div style="text-align: right; width: 72.5%;">&emsp; ... &emsp; <span class="clsbLPnk">(단어 D)</span></div></details>
+                            </div></details>
+                    </div></details><br/>&emsp;&emsp;
+
+                즉,<br/>&emsp;&emsp;
+                <span class=clsBlue>0</span> 일:&emsp; 0 일차에 새로운 단어를 단어 암기장에 추가<br/>&emsp;&emsp;
+                <span class=clsBlue>1</span> 일:&emsp; 1 일차에 1차 복습<br/>&emsp;&emsp;
+                <span class=clsBlue>1</span> 일:&emsp; 2 일차에 2차 복습<br/>&emsp;&emsp;
+                <span class=clsBlue>1</span> 일:&emsp; 3 일차에 3차 복습<br/>&emsp;&emsp;
+                <span class=clsBlue>3</span> 일:&emsp; 6 일차에 4차 복습<br/>&emsp;&emsp;
+                <span class=clsBlue>7</span> 일:&nbsp;&nbsp;&nbsp;10 일차에 5차 복습<br/>&emsp;&emsp;
+                <span class=clsBlue>14</span>일:&nbsp;&nbsp;24 일차에 6차 복습<br/>&emsp;&emsp;
+                <span class=clsBlue>28</span>일:&nbsp;&nbsp;52 일차에 7차 복습<br/><br/>&emsp;&nbsp;
+                
+                이렇게 매일 새로운 단어를 추가하고<br/>&emsp;
+                위와 같은 주기로 각 단어들을 복습하면<br/>&emsp;
+                <span class=clsPrplYellow>몇 천개의 단어</span>라도 <span class=clsPrplYellow>단기간에 암기</span>하는<br/>&emsp;
+                <span class=clsPrplYellow>기적 같은 경험</span>을 할 수 있습니다.
+            </div></details><br/>
+            <details class="idnt_L1"><summary>2)&nbsp; <u>사용 방법</u>:</summary><div id="lvDemo2">&emsp;
+                <details class="idnt_L2"><summary>2-1)&emsp; <u>첫날 (0 일차) 복습할 새 단어 등록</u>:</summary><div id="lvDemo2_1"><br/>&emsp;&emsp;&emsp;
+                <i style="font-size:small">주의: 단어 찾기만하고, 암기는 다음날 부터 시작함.</i><br/><br/>&emsp;&emsp;
+
+                    ㄱ)&emsp; '<b>단어 추가</b>' 페이지로 이동.<br/>
+                        <div class=clsUlPad>
+                            <ol type="a">
+                                <li>표에 있는 단어를 하나씩 순서대로 읽는다.<br/>&emsp;
+                                    1초 이내에 정확한 뜻이 떠오르지 않으면<br/>&emsp;
+                                    모르는 단어 ==&gt; 좌측 첵크 박스를<br/>&emsp;
+                                    클릭해 모르는 단어임을 표시해 둔다.<br/>&emsp;
+                                    이때 선택된 해당 단어의 뜻이 보인다.</li><br/>
+
+                                <li>모르는 단어 선택이 모두 끝나면<br/>&emsp;
+                                    'Pick Selections' 버튼을<br/>&emsp;
+                                    클릭해 단어를 임시 저장 한다.</li><br/>
+
+                                <li>새 단어를 더 추가 하고 싶다면,<br/>&emsp;
+                                    'The 1st Word No.' 우측에 있는<br/>&emsp;
+                                    '<mark> &gt; </mark>' 버튼을 눌러 다음 표를 불러 온다.</i></li><br/>
+
+                                <li>위 'a' 와 'b'를 반복하며 원하는 만큼<br/>&emsp;
+                                    단어 암기장 목록에 추가.</li><br/>
+
+                                <li>선택한 단어들을 모두 <b>단어 암기장</b>에<br/>&emsp;
+                                    등록 하기 위해 'Save Picks' 버튼을 클릭한다.<br/>&emsp;
+                                    내일 부터 암기할 단어를 단어 암기장에<br/>&emsp;
+                                    추가 했으므로, 오늘 <b>할일이 모두 끝</b>났다.</li>
+                            </ol>
+                        </div><br/>&emsp;&emsp;
+                    ㄴ)&emsp; '<b>단어 암기</b>' 페이지로 이동.<br/>
+                        <div class=clsUlPad>&emsp;
+                            앞서 <b>단어 암기장</b>에 추가된 단어들의<br/>&emsp;
+                            학습일이 내일로 설정 됐으므로 Table이<br/>&emsp;
+                            모두 빈칸이다.
+                            <!--ul>
+                                <li>'Clear Word List' 버튼 Click <i style="font-size:small">(0 일차에만 Click)</i></li>
+                                <li>'Word Index Number'에 새 단어 Index 추가</li>
+                                <li>'Update Next Review Columns' checkbox 선택</li>
+                                <li>'Update Review Days' 버튼 click</li>
+                            </ul--></div></div></details><br/>
+
+                <details class="idnt_L2"><summary>2-2)&emsp; <u>다음날 (1일차) 암기 시작</u>:</summary><div id="lvDemo2_2"><br/>&emsp;&emsp;
+                    오늘은 한 가지 일을 더 해야 한다.<br/>
+                    첫 날인 어제와 달리,<br/>
+                    오늘은 단어 암기장에 암기할 단어가<br/>
+                    있기 때문이다.<br/>
+                    그래서 먼저,<br/>
+                    1) 단어 암기를 하고, 그 다음<br/>
+                    2) 내일 암기할 새 단어를 등록해야 한다. <br/><br/>
+                    
+                    그러면 아래 절차에 따라 단어 암기를 시작해 보자.<br/><br/>
+
+                    ㄱ)&emsp; '<b>단어 암기</b>' 페이지로 이동.<br/>
+                        <div class=clsOlPad>
+                            a) 테이블에서 보이는 모든 단어를 암기한다 <br/>
+                                (복습 1일차 이므로 어제 단어 암기장에 등록된<br/>&emsp;
+                                모든 단어가 표시된 상태이다).<br/><br/>&emsp;
+
+                                * Note: 
+                                <div style="padding-left: 2em; font-size: small;">
+                                    모든 단어들의 뜻과 발음 기호를<br/>
+                                    보이게 하고 싶다면, 테이블 좌측 상단에<br/>
+                                    있는 'Hide Details' 라는 첵크 박스를<br/>
+                                    클릭해 체크 표시를 제거하면 된다. <br/>
+                                    처음 암기할 때는 이 상태로 학습하고,<br/>
+                                    다시 암기할 때는 뜻을 숨기고 하면<br/>
+                                    효과적이다. 뜻을 숨기려며,<br/>                                    
+                                    그 체크 박스를 다시 클릭하면 된다.<br/>
+                                    원하는 단어의 뜻이나 발음만 표시되게<br/>
+                                    하고 싶다면, 테이블의 'View' 칼럼에<br/>
+                                    있는 첵크 박스를 클릭하면 된다.<br/>
+                                    즉, 해당 줄에 있는 단어의 뜻과 발음만<br/>
+                                    표시 된다.
+                                </div>
+                            
+                            b) '<b>Review Done</b>' 버튼을 눌러 단어 암기가<br/>&emsp;
+                                끝났음을 앱에 알려 준다. 이때 표에 있던<br/>&emsp;
+                                모든 단어들이 사라 지는데,<br/>&emsp;
+                                이것은 오늘 암기할 단어가 더 이상 없다는<br/>&emsp;
+                                뜻임과 동시에, 이 단어 들을 내일 암기할<br/>&emsp;
+                                단어로 설정 했기 때문이다.
+                        </div><br/><br/>&emsp;&emsp;
+
+                    ㄴ)&emsp; '<b>단어 추가</b>' 페이지로 이동 (2일차에 복습할 단어 추가).<br/>
+                        <div class=clsOlPad>
+                            첫 날과 같이 절차로 암기할 새 단어를
+                            단어 암기장에 등록한다.
+                        </div></details><br/>
+
+                <details class="idnt_L2"><summary>2-3)&emsp; <u>다음날 (2일차) 암기 시작</u>:</summary><div id="lvDemo2_3"><br/>&emsp;&emsp;
+                    위 2-2와 동일한 순서로 복습한 뒤 새 단어 추가 한다.<br/><br/>
+
+                    참고로,<br/>
+                    오늘 이후 부터는 위 2-2를 매일 반복하게<br/>
+                    되는데, 이 과정에서 각 단어에 대한<br/>
+                    암기 반복 주기는 이 앱이 자동으로 관리해 준다.<br/>
+                </div></details><br/><br/>
+            </div></details><br/>
+            <div style="padding-left: 1em;">
+                * Note:
+                <div style="padding-left: 3em; font-size: small;">
+                     <mark>암기할 단어가 한나도 없는 날</mark>엔<br/>
+                     아래 두 가지 중 <mark>하나를 반드시 실행</mark>해야 합니다.<br>&emsp;
+                        ㄱ) '<b>Review Done</b>' 버튼을 누른다.<br>&emsp;
+                        ㄴ) 암기할 단어를 찾아 단어 암기장에 추가한다.
+                </div>
+            </div><br/>
+            <br/>
+        </div></details><br/>&emsp;
+        <div style="padding-left: 1em;">
+            * Note:
+            <div style="padding-left: 3em; font-size: small;">
+                학습에 사용된 단어 정보는<br/>
+                사용하는 기기에만 저장 됩니다.
+            </div>
+        </div><br/><hr>
+
+    </div>
+
+    <i style="color: grey; font-size: 8pt">Version: <span id="ftVer">&nbsp;</span>, &ensp; <span id="ftLstUdt">&nbsp;</span>&nbsp; SuntaekVil Artist&emsp; &copy; Copyright 2023, SuntaekVil, All Right Reserved</i><br/><br/>
+    <!--a id="goBack2" href="#" onClick="goBack(2)"><p><i>Back to the Main page</i></p></a-->
+</section>
+</body>
