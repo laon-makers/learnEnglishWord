@@ -7,8 +7,8 @@
     <script src=".\learnVocaFiles\voca.js" type="text/javascript"></script>
     <script src=".\learnVocaFiles\IndexLearnVoca_FC.js" type="text/javascript"></script>
     <script>
-        const AppVer = "1.1";
-        const AppLastUpdate = "Feb. 25, 2023";
+        const AppVer = "1.1.1";
+        const AppLastUpdate = "Feb. 26, 2023";
 
         const ixNvReviewWord = -1;  //'단어 암기'
         const ixNvAddNewWord = -2;  //'단어 추가'
@@ -85,6 +85,8 @@
                         htm.src = src + "0";
                         //document.getElementById("ifSet2").src = src + "20";
                         bInitSetting = true;
+                    } else if ( bAdmin === true ) {
+                        htm.contentWindow.postMessage( {msg: "enAdmin"}, "*");
                     }
 
                     setTimeout(cmdGetVocaTableIndex, postMsgTDly);
@@ -146,16 +148,29 @@
         }
 
         function AdminMode() {
+            let htm = document.getElementById("ifSettings");
+            document.getElementById("admDbg").hidden = bAdmin;
+
             if( bAdmin === false ) {
                 bAdmin = true;
                 document.getElementById('adminMd').innerText = 'Disable Admin Mode';
+                htm.contentWindow.postMessage( {msg: "enAdmin"}, "*");
+                
             } else {                
                 bAdmin = false;
                 document.getElementById('adminMd').innerText = 'Enable Admin Mode';
+                htm.contentWindow.postMessage( {msg: "disAdmin"}, "*");
             }
         }
         
+        function AdminShowRevWds() {
+            document.getElementById("ifReviewWd").contentWindow.postMessage({msg: "lstRevWd"}, "*");
+        }
 
+        function dbgCmd(cd, v) {
+            //document.getElementById("ifReviewWd").contentWindow.postMessage({msg: "dbgCmd", val: [cd, v]}, "*");
+            document.getElementById("ifSettings").contentWindow.postMessage({msg: "dbgCmd", val: [cd, v]}, "*");
+        }
 
         function reloadWordTablePage(ix) {
             let src = "";
@@ -198,6 +213,26 @@
                 case "expectedRvDay":
                     document.getElementById("eptRvDay").innerHTML = e.data[1];
                     break;
+
+                case "dbgRsp":
+                    switch( e.data [1]) {
+                    case "1":
+                        document.getElementById('crvDt').innerText = e.data[3];
+                        break;
+                    case "2":
+                        document.getElementById('crvDtIx').innerText = e.data[3];
+                        break;
+
+                    case "enAdmin":
+                        document.getElementById('crvDt').innerText = e.data[2];
+                        document.getElementById('crvDtIx').innerText = e.data[3];
+                        break;
+                    }
+                    break;
+                // case "revDyInfo":
+                //     document.getElementById('crvDt').innerText = e.data[1];
+                //     document.getElementById('crvDtIx').innerText = e.data[2];
+                //     break;
                 }
             }
         }
@@ -454,8 +489,20 @@
         </details><br/>
         
         <details><summary class="uline">4. <mark>Admin</mark></summary><br/>
-            <div style="padding-left: 20px;">                
-                <button id="adminMd" onclick="AdminMode()">Enable Admin Mode</button>
+
+            <div style="padding-left: 20px; line-height: 2.0;">
+                <button id="adminMd" onclick="AdminMode()">Enable Admin Mode</button><br/>                
+                <div id="admDbg" style="padding-left: 16px;" hidden><br/>
+
+                    <button id="admShowRevWd" onclick="AdminShowRevWds()">List Review Word Indics</button><br/>
+
+                    <p>Next Review Date: <span id="crvDt" style="color: red"></span>&emsp; Review Day Index Number: <span id="crvDtIx" style="color: red"></span></p>
+                    <button onclick="dbgCmd(1, 0)">1. Set Next Review Date to Today</button>&emsp;&emsp;&emsp;<!--Click the button to get the added word to be shown on the '단어 암기' table. -->
+                    <button onclick="dbgCmd(2, 0)">2. Increase Next Review Day Index by 1</button><br/>
+                    <button onclick="dbgCmd(3, 0)">3-0 Set First Review Word Index to 0 &nbsp;</button>&emsp;
+                    <button onclick="dbgCmd(3, 1)">3-1 Set First Review Word Index to 1</button><br/>
+                    <button onclick="dbgCmd(4, 0)">4. Clear Local Storage (review words)</button>&emsp;
+                </div>
             </div>
         </details><br/><hr><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
         <!--iframe id="ifSettings" src="" style="max-width: 1330px; min-width: 680px; max-height:880px; min-height: 440px; background-color: white; zoom:0.8" hidden></iframe><br/-->    
