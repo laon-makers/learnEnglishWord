@@ -113,26 +113,24 @@ details.idnt_L2     { margin-left: 2em; }
 details.idnt_L3     { margin-left: 3em; }
 details.idnt_L4     { margin-left: 4em; }
 
-.padL1 { padding-left: 2em;}
-.padL2 { padding-left: 4em;}
-.padL3 { padding-left: 6em;}
-.padL4 { padding-left: 8em;}
+.padL1      { padding-left: 2em;}
+.padL2      { padding-left: 4em;}
+.padL3      { padding-left: 6em;}
+.padL4      { padding-left: 8em;}
 
-iframe {
-    overflow: hidden;    
-}
-.clsRed {color: red}
+iframe      { overflow: hidden; }
+.clsRed     {color: red}
 .clsRedYellow {color: red; background-color: yellow}
 .clsPrplYellow {color: purple; background-color: yellow}
-.clsBlue {color: blue}
-.clsPrpl {color: purple}
-.clsGrn {color: green}
-.clsbLGrn {background-color: lightgreen;}
-.clsbLGry {background-color: lightgray;}
+.clsBlue    {color: blue}
+.clsPrpl    {color: purple}
+.clsGrn     {color: green}
+.clsbLGrn   {background-color: lightgreen;}
+.clsbLGry   {background-color: lightgray;}
 .clsbLSkBlu {background-color: lightskyblue;}
-.clsbLPnk {background-color: lightpink;}
-.clsUlPad {padding-left: 50px}
-.clsOlPad {margin-left: 75px}
+.clsbLPnk   {background-color: lightpink;}
+.clsUlPad   {padding-left: 50px}
+.clsOlMrg   {margin-left: 75px}
 
 .indexLabel{
     color:white;
@@ -140,6 +138,7 @@ iframe {
     border:.5pt solid windowtext;
     background:#16365C;
 }        
+
 .selStatusOption {
     text-align:center;
     border:.5pt solid windowtext;

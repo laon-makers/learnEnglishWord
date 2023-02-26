@@ -34,11 +34,11 @@
 <script src="LearnVoca_FC.js" type="text/javascript"></script>
 </head>
 <body>
-    <div id="ctrlHead" style="padding-left: 5px;">
+    <div id="ctrlHead" style="padding-left: 5px; line-height: 2.0;">
         <span id="wdPageIdx" class="indexLabel">The 1st Word No.&nbsp;</span>&nbsp;
         <span><button onclick="showPreviousPage()">&ensp;&lt;</button></span>&nbsp;
         <!--span id="first_word_idx" class="statusTxt" style="width:50px; display:inline-block">1</span>&ensp; -->
-        <span><input type="number" id="first_word_idx" class="statusTxt" style="width:30px;" min="1" value="1" onchange="wordIndexChanged()"></span>&nbsp;
+        <span><input type="number" id="first_word_idx" class="statusTxt" style="width:30px;" min="1" value="1" onchange="wordIndexChanged(false)"></span>&nbsp;
         <span><button onclick="showNextPage()">&gt;&ensp;</button></span>&emsp;
         <span id="vocaSelLbl" class="indexLabel" hidden>Word Source</span>
         <span>

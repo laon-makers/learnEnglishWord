@@ -278,7 +278,7 @@ function addMainTableRow(st, len) {
     }
 }
 
-function populateWordTable(wIx) {
+function populateWordTable(wIx, bRload) {
     let hide = document.getElementById('chkDetails');
     var dst = document.getElementById('wdTbl');
     let cnt = 0;
@@ -298,6 +298,9 @@ function populateWordTable(wIx) {
         //var revWrdNums = [];
         len = localStorage.length + 1;
         i = 0;
+
+        clearTable();
+        resetBuffForNewPage();
         
         for( let j = 0; j < localStorage.length; j++ ) {
             //v = Number(localStorage.getItem(j.toString()));
@@ -372,11 +375,12 @@ function populateWordTable(wIx) {
 
         i = 0;
 
-        if( bInit === false) {
+        if( (bInit === false) || (bRload === true) ) {
             
             revWrdCntToday = revWrdNums.length;
             document.getElementById("ifTblInfo").src = aVocaTable[vocaTblIdx] + "\\info.htm";
-            setTimeout(cmdGetSourceTableInfo, postMsgTDly);
+            if( bInit === false ) setTimeout(cmdGetSourceTableInfo, postMsgTDly);
+            else setTimeout(cmdGetSourceTableInfo, (postMsgTDly + 100));
 
         } else if( ln > 0 ) {            
             //firstWordIdx = v;
@@ -411,11 +415,17 @@ function populateWordTable(wIx) {
         v = wIx + 1;
 
         //if( parentMenu === menuAddNewWords ) {
-            if( bInit === false) {
+            if( (bInit === false) || (bRload === true) ) {
                 firstWordIdx = v;
                 
+                if( bRload === true ) {
+                    clearTable();
+                    resetBuffForNewPage();    
+                }
+
                 document.getElementById("ifTblInfo").src = aVocaTable[vocaTblIdx] + "\\info.htm";
-                setTimeout(cmdGetSourceTableInfo, postMsgTDly);
+                if( bInit === false ) setTimeout(cmdGetSourceTableInfo, postMsgTDly);
+                else setTimeout(cmdGetSourceTableInfo, (postMsgTDly + 100));
 
             } else if( v !== firstWordIdx ) {
                 
@@ -453,14 +463,15 @@ function populateWordTable(wIx) {
 
 
 function resetBuffForNewPage(){
-    //if( parentMenu === menuReviewWords) {
-        revWrdNums = [];
-        revWords = [];
+    if( parentMenu === menuReviewWords) {
+        revWrdNums = [];        
         nextRevWdIx = 0;
-    //}
+    }
+
+    revWords = [];
 }
 
-function wordIndexChanged() {
+function wordIndexChanged(bRload) {
     try{
         var idx = document.getElementById('first_word_idx');
         //var val = Number(idx.innerText);
@@ -477,12 +488,9 @@ function wordIndexChanged() {
                 //document.getElementById("btnReviewDone").hidden = true;
                 document.getElementById("btnReviewDone").disabled = true;
             }
-
-            clearTable();
-            resetBuffForNewPage();
         }
 
-        populateWordTable(val);
+        populateWordTable(val, bRload);
 
     } catch (err) {
         alert("Error in wordIndexChanged() !\r\n\tError: " + err.message);
@@ -520,8 +528,8 @@ function showPreviousPage() {
         //document.getElementById('first_word_idx').innerHTML = val;
         document.getElementById('first_word_idx').value = val.toString();
         
-        //populateWordTable(val);
-        wordIndexChanged();
+        //populateWordTable(val, false);
+        wordIndexChanged(false);
     }
 }
 
@@ -536,7 +544,7 @@ function showNextPage() {
         val += 1;
         idx.value = val.toString();
         
-        wordIndexChanged();
+        wordIndexChanged(false);
     } else if( parentMenu === menuAddNewWords) { // '단어 추가' page
         //document.getElementById('prev_p_idx').innerHTML = val;    
         val += tblRows;
@@ -545,8 +553,8 @@ function showNextPage() {
             //idx.innerHTML = val;
             idx.value = val.toString();
             
-            //populateWordTable(val);
-            wordIndexChanged();
+            //populateWordTable(val, false);
+            wordIndexChanged(false);
             
             //document.getElementById('next_p_idx').innerHTML = val + tblRows;
         }
@@ -580,8 +588,8 @@ function hideShowWordDetails() {
     //let val = Number(idx.innerText);
     let val = Number(idx.value);
 
-    if( hide. checked === true ) lbl.innerHTML = "Hide Details";
-    else lbl.innerHTML = "Show Details";
+    //if( hide. checked === true ) lbl.innerHTML = "Hide Details";
+    //else lbl.innerHTML = "Show Details";
 
     for( let i = 0, j = 1; i < curTblRows; i++, j++) {
         
@@ -651,7 +659,7 @@ function vocaChanged() {
     vocaTblIdx = document.getElementById('vocaSel').selectedIndex;
     totNofWords = document.getElementById(aVocaTable[vocaTblIdx]).rows.length; 
 
-    populateWordTable(document.getElementById("first_word_idx").value);
+    populateWordTable(document.getElementById("first_word_idx").value, false);
 }
 
 
@@ -1382,11 +1390,11 @@ function lvInitialize(bOnload, nArg) {
         }
 
         if( nArg > 0 ) {
-            wordIndexChanged();
+            wordIndexChanged(false);
         }
     } else if( (bReInit === true) || (bUTbl === true) ) {
         //vocaChanged(false);
-        wordIndexChanged();
+        wordIndexChanged(false);
     }
 
     //if( (bOnload === true) || (bReInit === true) ) 
@@ -1398,7 +1406,7 @@ function lvEventHandler(e) {
     if( Array.isArray(e.data) === true ) {
          
         if( parentMenu === menuReviewWords ) {
-            //wordIndexChanged();
+            //wordIndexChanged(false);
             var v;
 
             switch(e.data[0][0]) {
@@ -1616,8 +1624,9 @@ function lvEventHandler(e) {
             break;
         case "reload":
             if( (parentMenu === menuAddNewWords) || (parentMenu === menuReviewWords) ) { // not the 'Settings' page
-            //if( parentMenu === menuReviewWords ) {
-                wordIndexChanged();
+                tblInfoUdtCntDwn = dftTblInfoUpdtCntDwn;
+            //if( parentMenu === menuReviewWords ) {                
+                wordIndexChanged(true);
             }
             break;
 
