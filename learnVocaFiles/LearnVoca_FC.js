@@ -6,6 +6,7 @@ const maxNumVocaTbl = 3;    // the number of voca. tables to be loaded.
 const colPerVocaTbl = 4;    // the number of columns per loaded voca. table.
 const rowPerVocaTbl = 30;   // the number of rows per loaded voca. table.
 const dftTblInfoUpdtCntDwn = 5;
+const toDisWordIdexElements = 2000; // 2000 msec.
 
 // Following 2 values must be initialized, otherwise old values are kept in the page refresh.
 var parentMenu = "";
@@ -34,6 +35,7 @@ let bAdmin = false;
 let tblInfoUdtCntDwn = dftTblInfoUpdtCntDwn;
 let postMsgTDly = dftPostMsgTimeout + dftExtPostMsgTimeout;
 let expectedReviewDate = "";
+var timeOutId = null;
 
 /**************************/
 // function resetBuf(bFull) {
@@ -286,6 +288,7 @@ function populateWordTable(wIx, bRload) {
     var k, v;
     let tmp = 0;
     let bChg = false;
+    let bLd  = false;
     
     //let src = document.getElementById(aVocaTable[vocaTblIdx]);
     let ifr = document.getElementById("ifTmpVcTbl");
@@ -381,6 +384,7 @@ function populateWordTable(wIx, bRload) {
             document.getElementById("ifTblInfo").src = aVocaTable[vocaTblIdx] + "\\info.htm";
             if( bInit === false ) setTimeout(cmdGetSourceTableInfo, postMsgTDly);
             else setTimeout(cmdGetSourceTableInfo, (postMsgTDly + 100));
+            bLd = true;
 
         } else if( ln > 0 ) {            
             //firstWordIdx = v;
@@ -401,6 +405,8 @@ function populateWordTable(wIx, bRload) {
                     ifr.src = aVocaTable[vocaTblIdx] + "\\" + srcTblIx.toString() + ".htm";
                     setTimeout(cmdRevWordsFromSrcTble, postMsgTDly);
                 }
+
+                bLd = true;
             } else {
             //     ifr.contentWindow.postMessage({msg: "getRvwWord", val: revWrdNums}, "*");
                 i = curTblRows;  // to keep the data in the table
@@ -427,6 +433,8 @@ function populateWordTable(wIx, bRload) {
                 if( bInit === false ) setTimeout(cmdGetSourceTableInfo, postMsgTDly);
                 else setTimeout(cmdGetSourceTableInfo, (postMsgTDly + 100));
 
+                bLd = true;
+
             } else if( v !== firstWordIdx ) {
                 
                 firstWordIdx = v;
@@ -441,6 +449,8 @@ function populateWordTable(wIx, bRload) {
                 } else {
                     ifr.contentWindow.postMessage({msg: "getSrcTbl", val: firstWordIdx.toString()}, "*");
                 }
+
+                bLd = true;
 
                 i = 0;
             } else {
@@ -458,6 +468,14 @@ function populateWordTable(wIx, bRload) {
             dst.rows[j].cells[tblDstMeaningCol].innerHTML = "";   // meaning of word.
             dst.rows[j].cells[tblDstToAddCol].innerHTML = "";     // meaning of word.
         }
+    }
+
+    if( bLd === false ) {
+        if( timeOutId !== null ) {
+            clearTimeout(timeOutId);            
+        }
+
+        enWordIndexElements();
     }
 }
 
@@ -497,11 +515,34 @@ function wordIndexChanged(bRload) {
     }
 }
 
+function newWordIndexTyped() {
+
+    if( timeOutId !== null ) clearTimeout(timeOutId);
+    disWordIndexElements(true);
+
+    wordIndexChanged(false);
+
+    timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
+}
+
+function disWordIndexElements(b) {
+    document.getElementById('first_word_idx').disabled = b;
+    document.getElementById('prePage').disabled = b;
+    document.getElementById('nextPage').disabled = b;
+}
+
+
+
+function enWordIndexElements() {
+    timeOutId = null;
+    disWordIndexElements(false);
+}
+
 
 
 function showPreviousPage() {
-
-    let val = Number(document.getElementById('first_word_idx').value);
+    let el = document.getElementById('first_word_idx');
+    let val = Number(el.value);
     let val2 = val;
 
     if( parentMenu === menuReviewWords) {
@@ -525,11 +566,19 @@ function showPreviousPage() {
     }
     
     if( val !== val2 ) {
+
+        if( timeOutId !== null ) clearTimeout(timeOutId);
+        disWordIndexElements(true);
+
+        if( parentMenu === menuAddNewWords) clearWordSelection();
+
         //document.getElementById('first_word_idx').innerHTML = val;
-        document.getElementById('first_word_idx').value = val.toString();
+        el.value = val.toString();
         
-        //populateWordTable(val, false);
+        //populateWordTable(val, false);        
         wordIndexChanged(false);
+        
+        timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
     }
 }
 
@@ -544,7 +593,12 @@ function showNextPage() {
         val += 1;
         idx.value = val.toString();
         
+        if( timeOutId !== null ) clearTimeout(timeOutId);
+        disWordIndexElements(true);
+
         wordIndexChanged(false);
+        
+        timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
     } else if( parentMenu === menuAddNewWords) { // '단어 추가' page
         //document.getElementById('prev_p_idx').innerHTML = val;    
         val += tblRows;
@@ -553,9 +607,15 @@ function showNextPage() {
             //idx.innerHTML = val;
             idx.value = val.toString();
             
+            if( timeOutId !== null ) clearTimeout(timeOutId);
+            disWordIndexElements(true);
+
+            clearWordSelection();
+
             //populateWordTable(val, false);
-            wordIndexChanged(false);
+            wordIndexChanged(false);            
             
+            timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
             //document.getElementById('next_p_idx').innerHTML = val + tblRows;
         }
 
@@ -699,7 +759,16 @@ function updateSelRevList(id) {
 
 
 
-function pileNewWordIndics() {
+function clearWordSelection() {
+    let tbl = document.getElementById('wdTbl');
+    let ln = tblRows + 1;
+    for ( let i = 1; i < ln; i++ ) {
+        tbl.rows[i].cells[tblDstSelCol].firstChild.checked = false;
+    }
+}
+
+
+function pickSelectedWords() {
     const lst = [];
     let tbl = document.getElementById('wdTbl');
     //let dstIx = 3;
@@ -926,8 +995,8 @@ function setReviewDayUpdateRequest( bReq ) {
             localStorage.setItem("rvDy", d); // not getDay() which is for a day of week (0~6).
 
             setNextReviewDay();
-
-            expectedReviewDate = y + " " + m + " " + d;
+            m++; // month is 0 based number.
+            expectedReviewDate = y.toString() + " " + m.toString() + " " + d.toString();
         }
     } catch (err) {
         alert("Error in saving the updated review day update request/date !\r\n\tError: " + err.message);
@@ -1078,7 +1147,10 @@ function updateReviewDay() {
         }
     }
 
-    if( expectedReviewDate === "" ) expectedReviewDate = y + " " + m + " " + d;
+    if( expectedReviewDate === "" ) {
+        m++; // month is 0 based number.
+        expectedReviewDate = y.toString() + " " + m.toString() + " " + d.toString();
+    }
     //bReviewCompleted = bReq;
     //bReviewCompleted = false;
     return reviewDay;
@@ -1348,6 +1420,10 @@ function lvInitialize(bOnload, nArg) {
                 window.parent.postMessage( ["expectedRvDay", expectedReviewDate], "*");
             }
 
+            if( timeOutId !== null ) clearTimeout(timeOutId);
+            disWordIndexElements(true);
+            timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
+
         } else if( parentMenu == menuAddNewWords ) { // '단어 추가' page
             //document.getElementById("btnClrPick").hidden = false;
             document.getElementById("btnPickSelWordIx").hidden = false;
@@ -1362,6 +1438,10 @@ function lvInitialize(bOnload, nArg) {
             //document.getElementById("vocaSelLbl").hidden = false;
             
             hideClassForScanTable(0);
+
+            if( timeOutId !== null ) clearTimeout(timeOutId);
+            disWordIndexElements(true);
+            timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
 
         } else if( parentMenu == menuSettings ) { // 'Settings' page
             //document.getElementById("btnClrPick").hidden = false;
@@ -1434,6 +1514,8 @@ function lvEventHandler(e) {
 
                 }
 
+                v = 0;
+
                 if( nofWordsPerSrcTbl > 0 ) {
                     tblInfoUdtCntDwn = 0;   // to stop unnecessary further table info request.
 
@@ -1445,9 +1527,19 @@ function lvEventHandler(e) {
                             ifr.src = aVocaTable[vocaTblIdx] + "\\" + srcTblIx.toString() + ".htm";
                             setTimeout(cmdRevWordsFromSrcTble, postMsgTDly);
                             //ifr.contentWindow.postMessage(["getSrcTbl", firstWordIdx.toString()], "*");
+
+                            v = 1;
                         }
                     }
                 }
+
+                if( v === 0 ) {
+                    if( timeOutId !== null ) {
+                        clearTimeout(timeOutId);
+                        enWordIndexElements();
+                    }
+                }
+
                 break;
 
             case "vcList":            
@@ -1504,6 +1596,11 @@ function lvEventHandler(e) {
                     } else {
                         if( wIx > 0 ) v = wIx - 1;                        
                         setSourceTableIndex(revWrdNums[v]); // must come after 'nofWordsPerSrcTbl' is initialized.
+
+                        if( timeOutId !== null ) {
+                            clearTimeout(timeOutId);
+                            enWordIndexElements();
+                        }
                     }
 
                 }
@@ -1538,6 +1635,9 @@ function lvEventHandler(e) {
                     ifr.src = aVocaTable[vocaTblIdx] + "\\" + srcTblIx.toString() + ".htm";
                     setTimeout(cmdGetSourceTable, postMsgTDly);
                     //ifr.contentWindow.postMessage(["getSrcTbl", firstWordIdx.toString()], "*");
+                } else if( timeOutId !== null ) {
+                    clearTimeout(timeOutId);
+                    enWordIndexElements();
                 }
                 break;
 
@@ -1580,6 +1680,11 @@ function lvEventHandler(e) {
                             dst.rows[j].cells[tblDstMeaningCol].innerHTML = src[i][1]; // meaning of word.
                         }
                     }
+
+                    if( timeOutId !== null ) {
+                        clearTimeout(timeOutId);
+                        enWordIndexElements();
+                    }
                 }
 
                 break;
@@ -1605,12 +1710,16 @@ function lvEventHandler(e) {
             bAdmin = true; 
             v = getNextReviewDateHumanReadable();
 
-            //if( menuItemIdx === "1" ) {    // '단어 암기'
+            if( menuItemIdx === "1" ) {    // '단어 암기'
                 document.getElementById('nxtRvDay2').innerText = v;
                 document.getElementById('nxtRvDay').hidden = false;
-            //}
 
-            if( parentMenu === menuSettings ) {
+                let tbl = document.getElementById('revWdIxTbl');
+                if( tbl.rows.length > 1 ) {
+                    tbl.hidden = false;
+                }
+
+            } else if( parentMenu === menuSettings ) {
                 let ix = localStorage.getItem('rvDyIx');
                 if( isNaN(ix) === false ) {
                     reviewDay = Number(ix);
@@ -1630,6 +1739,7 @@ function lvEventHandler(e) {
             if( menuItemIdx === "1" ) {    // '단어 암기'
                 document.getElementById('nxtRvDay2').innerText = "";
                 document.getElementById('nxtRvDay').hidden = true;
+                document.getElementById('revWdIxTbl').hidden = true;
             }
             break;
 

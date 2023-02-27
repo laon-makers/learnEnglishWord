@@ -36,10 +36,10 @@
 <body>
     <div id="ctrlHead" style="padding-left: 5px; line-height: 2.0;">
         <span id="wdPageIdx" class="indexLabel">The 1st Word No.&nbsp;</span>&nbsp;
-        <span><button onclick="showPreviousPage()">&ensp;&lt;</button></span>&nbsp;
+        <span><button id="prePage" onclick="showPreviousPage()">&ensp;&lt;</button></span>&nbsp;
         <!--span id="first_word_idx" class="statusTxt" style="width:50px; display:inline-block">1</span>&ensp; -->
-        <span><input type="number" id="first_word_idx" class="statusTxt" style="width:30px;" min="1" value="1" onchange="wordIndexChanged(false)"></span>&nbsp;
-        <span><button onclick="showNextPage()">&gt;&ensp;</button></span>&emsp;
+        <span><input type="number" id="first_word_idx" class="statusTxt" style="width:30px;" min="1" value="1" onchange="newWordIndexTyped()"></span>&nbsp;
+        <span><button id="nextPage" onclick="showNextPage()">&gt;&ensp;</button></span>&emsp;
         <span id="vocaSelLbl" class="indexLabel" hidden>Word Source</span>
         <span>
             <select id="vocaSel" name="subject" class="selStatusOption" onchange="vocaChanged()" disabled>
@@ -60,7 +60,7 @@
             <label id="lblDetails" for="chkDetails">Hide Details</label>
         </span>&emsp;
         <span id="btnClrPick"><button onclick="clearPickMarks()">Clear Selections&nbsp;</button></span>
-        <span id="btnPickSelWordIx" hidden>&emsp;<button onclick="pileNewWordIndics()">Pick Selections</button></span>&ensp;&nbsp;
+        <span id="btnPickSelWordIx" hidden>&emsp;<button onclick="pickSelectedWords()">Pick Selections</button></span>&ensp;&nbsp;
         <span id="btnSavePicks" hidden><button onclick="savePickedWds()">Save Picks</button></span>
         <span><button id="btnReviewDone" onclick="reviewDone(true)">Review Done</button></span>
         <!--span id="btnDelAllWd"><button onclick="deleteAllWords()">Delete All Words</button></span-->
