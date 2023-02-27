@@ -36,10 +36,10 @@
 <body>
     <div id="ctrlHead" style="padding-left: 5px; line-height: 2.0;">
         <span id="wdPageIdx" class="indexLabel">The 1st Word No.&nbsp;</span>&nbsp;
-        <span><button onclick="showPreviousPage()">&ensp;&lt;</button></span>&nbsp;
+        <span><button id="prePage" onclick="showPreviousPage()">&ensp;&lt;</button></span>&nbsp;
         <!--span id="first_word_idx" class="statusTxt" style="width:50px; display:inline-block">1</span>&ensp; -->
-        <span><input type="number" id="first_word_idx" class="statusTxt" style="width:30px;" min="1" value="1" onchange="wordIndexChanged(false)"></span>&nbsp;
-        <span><button onclick="showNextPage()">&gt;&ensp;</button></span>&emsp;
+        <span><input type="number" id="first_word_idx" class="statusTxt" style="width:30px;" min="1" value="1" onchange="newWordIndexTyped()"></span>&nbsp;
+        <span><button id="nextPage" onclick="showNextPage()">&gt;&ensp;</button></span>&emsp;
         <span id="vocaSelLbl" class="indexLabel" hidden>Word Source</span>
         <span>
             <select id="vocaSel" name="subject" class="selStatusOption" onchange="vocaChanged()" disabled>
@@ -60,7 +60,7 @@
             <label id="lblDetails" for="chkDetails">Hide Details</label>
         </span>&emsp;
         <span id="btnClrPick"><button onclick="clearPickMarks()">Clear Selections&nbsp;</button></span>
-        <span id="btnPickSelWordIx" hidden>&emsp;<button onclick="pileNewWordIndics()">Pick Selections</button></span>&ensp;&nbsp;
+        <span id="btnPickSelWordIx" hidden>&emsp;<button onclick="pickSelectedWords()">Pick Selections</button></span>&ensp;&nbsp;
         <span id="btnSavePicks" hidden><button onclick="savePickedWds()">Save Picks</button></span>
         <span><button id="btnReviewDone" onclick="reviewDone(true)">Review Done</button></span>
         <!--span id="btnDelAllWd"><button onclick="deleteAllWords()">Delete All Words</button></span-->
@@ -93,15 +93,15 @@
             <td class="trNewWList">&nbsp;</td>
             <td class="trDel"><input type="checkbox" id="ckbDel0" name="ckbDel0" onclick="DeleteWord(0)" unchecked>
         </tr>
-    </table>
-    <div id="dbgBtn" hidden><br/>
-        <p>Next Review Date: <span id="crvDt" style="color: red"></span>&emsp; Review Day Index Number: <span id="crvDtIx" style="color: red"></span></p>
-        <button onclick="dbgCmd(1, 0)">1. Set Next Review Date to Today</button>&emsp;&emsp;&emsp;<!--Click the button to get the added word to be shown on the '단어 암기' table. -->
-        <button onclick="dbgCmd(2, 0)">2. Increase Next Review Day Index by 1</button><br/><br/>
-        <button onclick="dbgCmd(3, 0)">3-0 Set First Review Word Index to 0 &nbsp;</button>&emsp;
-        <button onclick="dbgCmd(3, 1)">3-1 Set First Review Word Index to 1</button><br/><br/>
-        <button onclick="dbgCmd(4, 0)">4. Clear Local Storage (review words)</button>&emsp;
-    </div>    
+    </table>    
+    <table id="revWdIxTbl" hidden>
+        <tr>
+            <th>Word Ix</th>
+            <th>Review Day Ix</th>
+            <th>Repeat Type</th>
+            <th>Inc. Step</th>
+        </tr>
+    </table>    
     <iframe id="ifTblInfo" src="" hidden></iframe>
     <!--iframe id="ifTmpVcTbl2" src="itmL2/1.htm"></iframe-->
     <iframe id="ifTmpVcTbl" src="" hidden></iframe>    
