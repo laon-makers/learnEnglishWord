@@ -1565,7 +1565,7 @@ function lvEventHandler(e) {
                         for( i = 0; i < src.length; i++, j++, wIx++) {
                             v = revWrdNums[wIx];
                             if( v >= totNofWords ) break;
-                            if( j >= curTblRows ) break;
+                            if( j > curTblRows ) break;
 
                             dst.rows[j].cells[tblDstIxCol].innerHTML = v.toString(); // Word index number
                             dst.rows[j].cells[tblDstWordCol].innerHTML = src[i][0]; // word                            
