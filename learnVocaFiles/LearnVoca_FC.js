@@ -540,6 +540,42 @@ function enWordIndexElements() {
 
 
 
+function getValidFirstWdIx(bNxt, val) {
+    var m;
+
+    if( bNxt === true ) {   // in showing next page.
+        let v = val + tblRows;
+
+        m = v % tblRows;
+
+        if( m === 1 ) {
+            val = v;
+        } else {
+            let d = (v - m) + 1;
+            if( d > 0 ) val = d;
+            else val = 1;
+        }
+
+    } else {    // in showing previous page.
+        if( val > tblRows ) {
+            m = val % tblRows;
+
+            if( m === 1 ) {
+                val -= tblRows;
+
+            } else {
+                val = (val - m) + 1;
+
+                if( val < 1 ) val = 1;
+            }
+
+        } else val = 1;
+    }
+
+    return val;
+}
+
+
 function showPreviousPage() {
     let el = document.getElementById('first_word_idx');
     let val = Number(el.value);
@@ -555,13 +591,16 @@ function showPreviousPage() {
 
 
     } else if( parentMenu === menuAddNewWords) { // '단어 추가' page
-        if( val > tblRows ) {
-            //document.write(val - 30);
-            val -= tblRows;            
-        } else {
-            //document.write("1");
-            val = 1;
-        }
+        // if( val > tblRows ) {
+        //     //document.write(val - 30);
+        //     val -= tblRows;
+
+        // } else {
+        //     //document.write("1");
+        //     val = 1;
+        // }
+
+        val = getValidFirstWdIx(false, val);
 
     }
     
@@ -600,8 +639,11 @@ function showNextPage() {
         
         timeOutId = setTimeout(enWordIndexElements, toDisWordIdexElements);
     } else if( parentMenu === menuAddNewWords) { // '단어 추가' page
-        //document.getElementById('prev_p_idx').innerHTML = val;    
-        val += tblRows;
+
+        // //document.getElementById('prev_p_idx').innerHTML = val;    
+        // val += tblRows;
+
+        val = getValidFirstWdIx(true, val);
 
         if( val <= totNofWords ) {
             //idx.innerHTML = val;
