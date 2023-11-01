@@ -273,9 +273,7 @@ function navExpandOrCollapse( bExd ) {
         document.getElementsByTagName("nav")[0].style.width = "10px";
     }
 
-    for( let i = 0; i < 7; i++ ) {
-        document.getElementById("n" + i.toString()).hidden = !bExd;
-    }
+    document.getElementById("navDiv").hidden = !bExd;
     bNavExpand = bExd;
 }
 
